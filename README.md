@@ -85,6 +85,19 @@ The terminal prints CEO progress, the full **message bus history**, and the **CE
 pytest -q
 ```
 
+## Troubleshooting
+
+| Symptom | What to do |
+|---------|------------|
+| **SendGrid** `URLError` / `Temporary failure in name resolution` | Your PC cannot reach the internet or DNS is broken—not an API key issue. Check Wi‑Fi, run `curl -sI https://api.sendgrid.com`, try another network or disable VPN. |
+| **SendGrid** `403` / forbidden | Verify **Single Sender** in SendGrid; `SENDGRID_FROM_EMAIL` must match; API key has **Mail Send**; no extra spaces in `.env`. |
+| **Slack** `channel_not_found` | Create a **public** `#launches`, add the bot, or set `SLACK_CHANNEL` to the **Channel ID** (`C…`) from channel details. |
+| **Groq / LLM** errors | Check `GROQ_API_KEY` and `LLM_PROVIDER=groq`; see [Groq console](https://console.groq.com/keys). |
+
+## Demo video (assignment)
+
+Record a **live** run (8–10 minutes): terminal with `python main.py "…"`, then show **GitHub PR**, **inbox email**, **Slack `#launches`**, and at least one **CEO review / feedback** moment in the log. Do not play pre-recorded logs only.
+
 ## Platforms and actions
 
 | Platform | What agents do |
@@ -99,15 +112,15 @@ pytest -q
 | Item | Link |
 |------|------|
 | **Public GitHub repository** | https://github.com/AnasA18H/launchmind-i221987 |
-| **Demo video** | *Add your YouTube/Drive URL here when ready* |
-| **Example PR opened by Engineer agent** | https://github.com/AnasA18H/launchmind-i221987/pull/18 *(update if your latest run used a different PR)* |
+| **Demo video** | *https://www.loom.com/share/06d1bcef6600419c9ef3997889e665fb* |
+| **Example PR opened by Engineer agent** | https://github.com/AnasA18H/launchmind-i221987/pull/18 *(update this link after each successful run if you want the latest PR)* |
 | **Slack workspace** (invite) | https://join.slack.com/t/i221987/shared_invite/zt-3uqnfw65u-Cc0j8cpheSCM0fip7f_CDQ |
 
 ## Group members and agent ownership
 
 Each student owns at least one agent end-to-end (implementation, testing, demo). Split for this group:
 
-| Roll # | Name | Agent(s) owned | Main file(s) |
+| Student ID | Name | Agent(s) owned | Main file(s) |
 |--------|------|------------------|--------------|
 | **i221987** | Mohammad Anas | **CEO** (orchestrator, decomposition, reviews, final Slack summary) | [`agents/ceo_agent.py`](agents/ceo_agent.py), [`main.py`](main.py) wiring |
 | **i222048** | Sahil Kumar | **Product**, **Marketing** | [`agents/product_agent.py`](agents/product_agent.py), [`agents/marketing_agent.py`](agents/marketing_agent.py) |
@@ -122,5 +135,7 @@ Each student owns at least one agent end-to-end (implementation, testing, demo).
 - [`message_bus.py`](message_bus.py) — shared in-process queues + history  
 - [`schemas.py`](schemas.py) — message validation  
 - [`llm.py`](llm.py) — Anthropic / OpenAI / Groq helper  
+- [`slack_utils.py`](slack_utils.py) — Slack channel join + `chat.postMessage`  
 - [`agents/`](agents/) — one module per agent  
+- [`scripts/`](scripts/) — optional smoke tests (`smoke_platforms.py`, `slack_test_channel.py`)  
 
