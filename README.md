@@ -1,6 +1,9 @@
 # LaunchMind — Multi-Agent Startup System
 
-A multi-agent system (MAS) that takes a startup idea and runs it through **Product**, **Engineer**, **Marketing**, and **QA** agents with a **CEO** orchestrator. Agents exchange **structured JSON messages** on an in-process message bus. The Engineer opens a real **GitHub** pull request; Marketing sends a real **SendGrid** email and posts **Slack Block Kit** messages; the CEO posts a final summary to Slack.
+**FAST Agentic AI — Group project.** Five LLM-powered agents (**CEO**, **Product**, **Engineer**, **Marketing**, **QA**) collaborate over a **JSON message bus** to take a startup idea from spec to launch-style outputs: the **Engineer** opens a real **GitHub** PR; **Marketing** sends a real **SendGrid** email and posts **Slack Block Kit** to `#launches`; the **CEO** reviews work and posts a final Slack summary. **Startup focus:** connecting **local artisans** with nearby buyers (listings, chat, pickup scheduling).
+
+> **GitHub “About” blurb (copy into repo → ⚙️ → *About* → Description):**  
+> *Five autonomous agents (CEO, Product, Engineer, Marketing, QA) run a micro-startup end-to-end: product spec, landing-page PR, marketing email, and Slack—with real GitHub, SendGrid, and Slack integrations. FAST multi-agent assignment (i221987 / i222048 / i222003).*
 
 ## Startup idea
 
@@ -112,7 +115,6 @@ Each student owns at least one agent end-to-end (implementation, testing, demo).
 
 **Shared infrastructure** (whole group collaborates, often led by CEO owner): [`message_bus.py`](message_bus.py), [`schemas.py`](schemas.py), [`llm.py`](llm.py), [`slack_utils.py`](slack_utils.py).
 
-*Adjust the table if your instructor wants a different split—keep every agent covered.*
 
 ## Repository layout
 
