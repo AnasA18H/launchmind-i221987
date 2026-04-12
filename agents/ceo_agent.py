@@ -5,29 +5,17 @@ import json
 import os
 from typing import Any
 
-import requests
-
 from agents import marketing_agent, product_agent, qa_agent
 from agents.engineer_agent import process_inbox as engineer_process
 from agents.utils import iso_timestamp, new_message_id
 from llm import call_llm, parse_json_from_llm
 from message_bus import MessageBus
 from schemas import make_message
+from slack_utils import slack_chat_post_message
 
 
 def _slack_post_blocks(blocks: list[dict[str, Any]]) -> None:
-    token = os.environ["SLACK_BOT_TOKEN"]
-    channel = os.environ.get("SLACK_CHANNEL", "#launches")
-    r = requests.post(
-        "https://slack.com/api/chat.postMessage",
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        json={"channel": channel, "blocks": blocks},
-        timeout=60,
-    )
-    r.raise_for_status()
-    data = r.json()
-    if not data.get("ok"):
-        raise RuntimeError(f"Slack API error: {data}")
+    slack_chat_post_message({"blocks": blocks})
 
 
 def decompose_idea(idea: str) -> dict[str, str]:

@@ -6,7 +6,6 @@ import json
 import os
 from typing import Any
 
-import requests
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
@@ -14,6 +13,7 @@ from agents.utils import iso_timestamp, new_message_id
 from llm import call_llm, parse_json_from_llm
 from message_bus import MessageBus
 from schemas import make_message
+from slack_utils import slack_chat_post_message
 
 
 def _generate_copy(spec: dict[str, Any], pr_url: str) -> dict[str, Any]:
@@ -25,10 +25,21 @@ def _generate_copy(spec: dict[str, Any], pr_url: str) -> dict[str, Any]:
 - twitter_post: string
 - linkedin_post: string
 - instagram_post: string
-No markdown fences, JSON only."""
+Rules: valid JSON only. Use standard double quotes for keys and strings. Escape any double quote inside a string as \\".
+Do not put raw line breaks inside string values — use \\n instead. No markdown fences."""
     user = f"Product spec:\n{json.dumps(spec, indent=2)}\nGitHub PR (for context): {pr_url}\n"
     text = call_llm(system, user, max_tokens=2048)
-    raw = parse_json_from_llm(text)
+    try:
+        raw = parse_json_from_llm(text)
+    except json.JSONDecodeError:
+        fix = call_llm(
+            "The user message is broken JSON from another model. Output ONLY a valid JSON object with the same keys: "
+            "tagline, landing_blurb, email_subject, email_body, twitter_post, linkedin_post, instagram_post. "
+            "Escape quotes inside strings. No markdown, no explanation.",
+            text[:16000],
+            max_tokens=4096,
+        )
+        raw = parse_json_from_llm(fix)
     if not isinstance(raw, dict):
         raise ValueError("marketing copy must be a JSON object")
     return {
@@ -52,36 +63,36 @@ def _send_sendgrid(subject: str, body: str, to_email: str) -> None:
         html_content=f"<pre style='font-family:sans-serif;white-space:pre-wrap'>{html.escape(body)}</pre>",
     )
     sg = SendGridAPIClient(key)
-    sg.send(message)
+    try:
+        sg.send(message)
+    except Exception as exc:
+        body = getattr(exc, "body", None)
+        if body is None and hasattr(exc, "args") and exc.args:
+            body = exc.args[0]
+        detail = body.decode() if isinstance(body, (bytes, bytearray)) else (body or str(exc))
+        raise RuntimeError(
+            f"SendGrid error ({type(exc).__name__}). From={from_email!r} to={to_email!r}. "
+            f"Check API key has Mail Send, sender is verified, and .env has no extra spaces. "
+            f"Details: {detail}"
+        ) from exc
 
 
 def _post_slack_block_kit(tagline: str, description: str, pr_url: str) -> None:
-    token = os.environ["SLACK_BOT_TOKEN"]
-    channel = os.environ.get("SLACK_CHANNEL", "#launches")
-    payload = {
-        "channel": channel,
-        "blocks": [
-            {"type": "header", "text": {"type": "plain_text", "text": f"New Launch: {tagline}", "emoji": True}},
-            {"type": "section", "text": {"type": "mrkdwn", "text": description}},
-            {
-                "type": "section",
-                "fields": [
-                    {"type": "mrkdwn", "text": f"*GitHub PR:* <{pr_url}|View PR>"},
-                    {"type": "mrkdwn", "text": "*Status:* Ready for review"},
-                ],
-            },
-        ],
-    }
-    r = requests.post(
-        "https://slack.com/api/chat.postMessage",
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=60,
+    slack_chat_post_message(
+        {
+            "blocks": [
+                {"type": "header", "text": {"type": "plain_text", "text": f"New Launch: {tagline}", "emoji": True}},
+                {"type": "section", "text": {"type": "mrkdwn", "text": description}},
+                {
+                    "type": "section",
+                    "fields": [
+                        {"type": "mrkdwn", "text": f"*GitHub PR:* <{pr_url}|View PR>"},
+                        {"type": "mrkdwn", "text": "*Status:* Ready for review"},
+                    ],
+                },
+            ],
+        }
     )
-    r.raise_for_status()
-    data = r.json()
-    if not data.get("ok"):
-        raise RuntimeError(f"Slack API error: {data}")
 
 
 def process_inbox(bus: MessageBus) -> None:

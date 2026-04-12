@@ -1,4 +1,4 @@
-"""LLM calls: Anthropic or OpenAI via env."""
+"""LLM calls: Anthropic, OpenAI, or Groq (OpenAI-compatible) via env."""
 from __future__ import annotations
 
 import json
@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+
 
 def get_provider() -> str:
     return os.environ.get("LLM_PROVIDER", "anthropic").lower()
@@ -19,6 +21,8 @@ def call_llm(system_prompt: str, user_prompt: str, max_tokens: int = 4096) -> st
     provider = get_provider()
     if provider == "openai":
         return _call_openai(system_prompt, user_prompt, max_tokens)
+    if provider == "groq":
+        return _call_groq(system_prompt, user_prompt, max_tokens)
     return _call_anthropic(system_prompt, user_prompt, max_tokens)
 
 
@@ -64,20 +68,70 @@ def _call_openai(system_prompt: str, user_prompt: str, max_tokens: int) -> str:
     return choice
 
 
+def _call_groq(system_prompt: str, user_prompt: str, max_tokens: int) -> str:
+    """Groq exposes an OpenAI-compatible Chat Completions API."""
+    from openai import OpenAI
+
+    key = os.environ.get("GROQ_API_KEY")
+    if not key:
+        raise RuntimeError(
+            "GROQ_API_KEY is not set (get a key at https://console.groq.com/keys ; set LLM_PROVIDER=groq)"
+        )
+    client = OpenAI(api_key=key, base_url=GROQ_BASE_URL)
+    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    r = client.chat.completions.create(
+        model=model,
+        max_tokens=max_tokens,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+    )
+    choice = r.choices[0].message.content
+    if not choice:
+        raise RuntimeError("Empty Groq response")
+    return choice
+
+
 _JSON_FENCE = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.MULTILINE)
 
 
+def _repair_json_loose(s: str) -> str:
+    """Best-effort fixes for common LLM JSON mistakes."""
+    for a, b in (
+        ("\u201c", '"'),
+        ("\u201d", '"'),
+        ("\u2018", "'"),
+        ("\u2019", "'"),
+    ):
+        s = s.replace(a, b)
+    # Trailing commas before } or ]
+    s = re.sub(r",\s*([}\]])", r"\1", s)
+    return s
+
+
 def parse_json_from_llm(text: str) -> Any:
-    """Extract JSON object/array from model output (handles markdown fences)."""
-    text = text.strip()
+    """Extract JSON object/array from model output (handles markdown fences, light repair)."""
+    original = text.strip()
+    text = original
     m = _JSON_FENCE.search(text)
     if m:
         text = m.group(1).strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start >= 0 and end > start:
-            return json.loads(text[start : end + 1])
-        raise
+
+    candidates: list[str] = [text]
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        candidates.append(text[start : end + 1])
+
+    last_err: json.JSONDecodeError | None = None
+    for cand in candidates:
+        for repaired in (cand, _repair_json_loose(cand)):
+            try:
+                return json.loads(repaired)
+            except json.JSONDecodeError as e:
+                last_err = e
+                continue
+    if last_err:
+        raise last_err
+    raise json.JSONDecodeError("No JSON object found", original, 0)

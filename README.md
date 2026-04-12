@@ -2,9 +2,9 @@
 
 A multi-agent system (MAS) that takes a startup idea and runs it through **Product**, **Engineer**, **Marketing**, and **QA** agents with a **CEO** orchestrator. Agents exchange **structured JSON messages** on an in-process message bus. The Engineer opens a real **GitHub** pull request; Marketing sends a real **SendGrid** email and posts **Slack Block Kit** messages; the CEO posts a final summary to Slack.
 
-## Startup idea (edit for your group)
+## Startup idea
 
-**LaunchMind** helps very small teams simulate a product launch: autonomous agents produce a product spec, a landing-page HTML prototype, marketing copy, and real integrations (GitHub PR, email, Slack) so you can demonstrate end-to-end agent collaboration. Replace this paragraph in your README with your own concrete idea (target user, core feature, why it matters).
+**Local artisan marketplace (mobile app):** connect local artisans and small makers with nearby buyers through simple listings, chat, and pickup scheduling—so communities can discover handmade goods and support local makers without relying only on generic e-commerce platforms.
 
 ## Architecture
 
@@ -57,7 +57,7 @@ flowchart TB
    - **GitHub**: public repo; classic PAT with `repo`; set `GITHUB_REPO=owner/name`.
    - **Slack**: bot token with `chat:write`, `channels:read`, `channels:join`; invite the bot to `#launches` (or set `SLACK_CHANNEL` to a channel ID).
    - **SendGrid**: API key, verified sender → `SENDGRID_FROM_EMAIL`; recipient → `TEST_EMAIL`.
-   - **LLM**: `ANTHROPIC_API_KEY` (default) or `OPENAI_API_KEY` with `LLM_PROVIDER=openai`.
+   - **LLM**: `GROQ_API_KEY` with `LLM_PROVIDER=groq` (see `.env.example`), or `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` with matching `LLM_PROVIDER`.
 
 5. **Optional smoke checks** (with `.env` loaded):
 
@@ -91,20 +91,34 @@ pytest -q
 | **SendGrid** | Marketing cold email (subject/body from LLM) |
 | **Slack** | Marketing launch Block Kit post; CEO final summary Block Kit post |
 
-## Links for submission (fill after your first successful run)
+## Links for submission
 
-- **GitHub PR** (from Engineer): *add URL here*
-- **Slack workspace** (invite link) or screenshots: *add here*
+| Item | Link |
+|------|------|
+| **Public GitHub repository** | https://github.com/AnasA18H/launchmind-i221987 |
+| **Demo video** | *Add your YouTube/Drive URL here when ready* |
+| **Example PR opened by Engineer agent** | https://github.com/AnasA18H/launchmind-i221987/pull/18 *(update if your latest run used a different PR)* |
+| **Slack workspace** (invite) | https://join.slack.com/t/i221987/shared_invite/zt-3uqnfw65u-Cc0j8cpheSCM0fip7f_CDQ |
+
+## Group members and agent ownership
+
+Each student owns at least one agent end-to-end (implementation, testing, demo). Split for this group:
+
+| Roll # | Name | Agent(s) owned | Main file(s) |
+|--------|------|------------------|--------------|
+| **i221987** | Mohammad Anas | **CEO** (orchestrator, decomposition, reviews, final Slack summary) | [`agents/ceo_agent.py`](agents/ceo_agent.py), [`main.py`](main.py) wiring |
+| **i222048** | Sahil Kumar | **Product**, **Marketing** | [`agents/product_agent.py`](agents/product_agent.py), [`agents/marketing_agent.py`](agents/marketing_agent.py) |
+| **i222003** | Abubakkar Nadeem | **Engineer**, **QA** | [`agents/engineer_agent.py`](agents/engineer_agent.py), [`agents/qa_agent.py`](agents/qa_agent.py) |
+
+**Shared infrastructure** (whole group collaborates, often led by CEO owner): [`message_bus.py`](message_bus.py), [`schemas.py`](schemas.py), [`llm.py`](llm.py), [`slack_utils.py`](slack_utils.py).
+
+*Adjust the table if your instructor wants a different split—keep every agent covered.*
 
 ## Repository layout
 
 - [`main.py`](main.py) — entry point  
 - [`message_bus.py`](message_bus.py) — shared in-process queues + history  
 - [`schemas.py`](schemas.py) — message validation  
-- [`llm.py`](llm.py) — Anthropic / OpenAI helper  
+- [`llm.py`](llm.py) — Anthropic / OpenAI / Groq helper  
 - [`agents/`](agents/) — one module per agent  
 
-## Group member ↔ agent ownership
-
-Document in your course submission which student owns which agent (assignment requirement).
-# launchmind-i221987
