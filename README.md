@@ -2,8 +2,8 @@
 
 **FAST Agentic AI — Group project.** Five LLM-powered agents (**CEO**, **Product**, **Engineer**, **Marketing**, **QA**) collaborate over a **JSON message bus** to take a startup idea from spec to launch-style outputs: the **Engineer** opens a real **GitHub** PR; **Marketing** sends a real **SendGrid** email and posts **Slack Block Kit** to `#launches`; the **CEO** reviews work and posts a final Slack summary. **Startup focus:** connecting **local artisans** with nearby buyers (listings, chat, pickup scheduling).
 
-> **GitHub “About” blurb (copy into repo → ⚙️ → *About* → Description):**  
-> *Five autonomous agents (CEO, Product, Engineer, Marketing, QA) run a micro-startup end-to-end: product spec, landing-page PR, marketing email, and Slack—with real GitHub, SendGrid, and Slack integrations. FAST multi-agent assignment (i221987 / i222048 / i222003).*
+> **GitHub “About” → Description** (paste **without** an “Option A:” prefix):  
+> *Multi-agent system that turns a startup idea into a product spec, landing page PR, marketing email, and Slack updates using LLM-powered CEO, Product, Engineer, Marketing, and QA agents.*
 
 ## Startup idea
 
